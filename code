@@ -1,0 +1,111 @@
+### ZPD Growth Trajectories ###
+
+library(devtools)
+library(ZPDGrowthTrajectories)
+library(ggplot2)
+library(dplyr)
+
+set.seed(1)
+
+n <- 100
+
+#learning rate
+#learning.rates <- c(.08, .10, .12, .18)
+learning.rates <- rnorm(n, .12, .02)
+
+#decay rate
+#decay.rates <- c(.04, .03, .02, .01)
+decay.rates <- rnorm(n, .025, .002)
+
+#initial achievement 
+#initial.achievements <- rep(0, times=4)
+initial.achievements <- rep(0, times=n)
+
+#quality of home environment
+#home.environments <- c(.12, .13, .16, .19)
+home.environments <- rnorm(n, .15, .03)
+##The following code plots current achievement and ZPD
+
+#visualizeZPD(achievement=.2, zpd.sd=.02, zpd.offset=.3)
+
+#Defining School Curriculum
+##assignment vector, 4 students, 1300 days, start at zero achievement, 
+##1st 800 days= home, 800-1,000=kindergarden, 1,001-1,100=summer, 1,101-1,300=1st grade
+
+assignment <- c(rep(0, times=800), rep(1:36, each=7),
+               rep(0, times=113), rep(37:72, each=7),
+               rep(0, times=113), rep(73:108, each=7),
+               rep(0, times=113), rep(109:144, each=7),
+               rep(0, times=113), rep(145:180, each=7),
+               rep(0, times=113), rep(181:216, each=7),
+               rep(0, times=113))
+               
+
+
+#School Curriculum
+##can be represented using different levels of curriculum or just one level(they all get the same version)
+## example below shows 3 versions; typical grade level, remedial, advanced
+
+curriculum.start.points <- matrix(c(seq(from=.1, to=.3, length.out=216), 
+                                    seq(from=.3, to=.4, length.out=216),
+                                    seq(from=.05, to=.25, length.out=216)),
+                                  nrow=216, ncol=3)
+
+curriculum.widths <- matrix(rep(.0043, times=108*3), nrow=108, ncol=3)
+
+#plot school curriculum to show example, thus far
+
+#visualizeSchoolCurriculum(start.point=.1, width=.005, 
+                        lower.slope=500, upper.slope=500, alpha=1)
+
+#visualizeHomeCurriculum(shape1=1, shape2=5)
+
+#ZPD Growth Trajectories generating synthetic growth for 4 students
+
+trajectories <-ZPDGrowthTrajectories_multicore(
+  n.cores=4,
+  output.format="long",
+  days=length(assignment),
+  assignment=assignment,
+  curriculum.start.points=curriculum.start.points,
+  curriculum.widths=curriculum.widths,
+  dosage=.8,
+  learning.rates=learning.rates*1,
+  decay.rates=decay.rates,
+  initial.achievements=initial.achievements,
+  home.environments=home.environments*.35,
+  integration.points=350,
+  curriculum.lower.slope=1000,
+  curriculum.upper.slope=1000,
+  alpha=1,
+  home.curriculum.shape1=1,
+  home.curriculum.shape2=10,
+  zpd.offset=.01,
+  zpd.sd=.028,
+  zpd.scale=.3,
+  decay.weight=.005,
+  useGPU=F,
+  verbose=T)
+
+visualizeTrajectories(trajectories)
+
+##first few cols can be examined 
+
+#head(trajectories)
+
+##plot using ggplot2
+
+figure <- visualizeTrajectories(trajectories)
+figure + geom_vline(xintercept=c(800, 1045, 1145), alpha=.2) +
+geom_hline(yintercept=c(.1, .2), alpha=.2)
+
+
+
+
+
+
+
+
+
+
+
